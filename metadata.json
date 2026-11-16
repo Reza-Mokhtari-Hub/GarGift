@@ -1,0 +1,6 @@
+{
+  "name": "GarGift+ | گرگیفت+",
+  "description": "فروشگاه تخصصی گیفت‌کارت، اشتراک‌های هوش مصنوعی و شارژ بازی‌های آنلاین با تحویل آنی و پنل مدیریت پیشرفته",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
