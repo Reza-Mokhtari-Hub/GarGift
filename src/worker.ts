@@ -1,6 +1,6 @@
 /**
  * Cloudflare Worker + Durable Object (Built-in SQLite) Entry Point for GarGift+
- * Zero external setup required: Just run `npm run deploy:cf` (or `npx wrangler deploy`).
+ * 100% Web-Standard / Edge-safe: Zero imports of node:fs or src/server/db.ts.
  */
 import crypto from 'node:crypto';
 import {
@@ -8,7 +8,6 @@ import {
   maskGiftCode,
   calculateVariantPrice,
 } from './utils/format';
-import { DEFAULT_SETTINGS } from './server/seed';
 
 export interface Env {
   GARGIFT_STORE: any;
@@ -19,6 +18,106 @@ export interface Env {
   ADMIN_EMAIL?: string;
   ADMIN_INITIAL_PASSWORD?: string;
 }
+
+const DEFAULT_SETTINGS: Record<string, any> = {
+  general: {
+    siteName: 'گرگیفت+',
+    siteNameLatin: 'GarGift+',
+    slogan: 'گیفت‌کارت، اشتراک و شارژ بازی؛ سریع، مطمئن، ارزان',
+    logoUrl: '',
+    faviconUrl: '',
+    usePersianDigits: true,
+    showUsdPrice: true,
+    supportPhone: '۰۲۱-۹۱۰۰۱۲۳۴',
+    supportEmail: 'support@gargift.ir',
+    workingHours: 'همه‌روزه حتی ایام تعطیل، ۹ صبح تا ۱۲ شب',
+    telegramUrl: 'https://t.me/gargift_plus',
+    whatsappUrl: 'https://wa.me/989120000000',
+    instagramUrl: 'https://instagram.com/gargift_plus',
+    enamadHtml: '',
+    footerText: 'تمامی حقوق مادی و معنوی این وب‌سایت متعلق به فروشگاه گرگیفت+ (GarGift+) می‌باشد.',
+    maintenanceMode: false,
+    maintenanceMessage: 'فروشگاه در حال به‌روزرسانی زیرساخت است. لطفاً دقایقی دیگر مراجعه فرمایید.',
+    announcementBarActive: true,
+    announcementBarText: 'تحویل آنی کدهای گیفت‌کارت و اکانت‌های هوش مصنوعی + ۵٪ کش‌بک کیف پول برای اولین خرید با کد GARGIFT5',
+    announcementBarLink: '/products',
+  },
+  theme: {
+    defaultMode: 'dark',
+    primaryColor: '#6366f1',
+    accentColor: '#06b6d4',
+    borderRadius: '0.75rem',
+    cardStyle: 'bordered',
+    customCss: '',
+  },
+  pricing: {
+    globalUsdRate: 69000,
+    isSampleRateWarning: true,
+    globalMarginPercent: 6,
+    fixedFeeToman: 0,
+    roundingStepToman: 1000,
+    referralRewardPercent: 3,
+    loyaltyCashbackPercent: 1,
+  },
+  payment: {
+    walletEnabled: true,
+    cardToCardEnabled: true,
+    cardSelectionMode: 'round_robin',
+    cards: [
+      {
+        id: 'card-1',
+        bankName: 'بانک سامان (نمونه تستی)',
+        cardNumber: '6219-8610-0000-0000',
+        ownerName: 'شرکت گرگیفت پلاس (حساب آزمایشی)',
+        isActive: true,
+      },
+      {
+        id: 'card-2',
+        bankName: 'بانک ملت (نمونه تستی)',
+        cardNumber: '6104-3370-0000-0000',
+        ownerName: 'شرکت گرگیفت پلاس (حساب آزمایشی)',
+        isActive: true,
+      },
+    ],
+    zarinpalEnabled: true,
+    zarinpalSandbox: true,
+    zarinpalMerchantId: '00000000-0000-0000-0000-000000000000',
+    zarinpalBaseUrl: 'https://sandbox.zarinpal.com',
+    zibalEnabled: true,
+    zibalSandbox: true,
+    zibalMerchantId: 'zibal',
+    zibalBaseUrl: 'https://gateway.zibal.ir',
+    cryptoEnabled: true,
+    cryptoNetwork: 'TRC20 (USDT)',
+    cryptoWalletAddress: 'TTestWalletAddressGarGiftPlus000000000',
+    paymentTimeoutMinutes: 30,
+    maxOpenOrdersPerUser: 3,
+    gatewayFeePercent: 0,
+    minOrderToman: 10000,
+    maxOrderToman: 100000000,
+  },
+  homepageLayout: {
+    sections: [
+      { id: 'hero', title: 'اسلایدر و بنر اصلی', enabled: true, order: 1 },
+      { id: 'categories', title: 'دسته‌بندی‌های اصلی', enabled: true, order: 2 },
+      { id: 'special_offers', title: 'پیشنهادهای ویژه و تخفیف‌دار', enabled: true, order: 3 },
+      { id: 'bestsellers', title: 'پرفروش‌ترین محصولات', enabled: true, order: 4 },
+      { id: 'newest', title: 'جدیدترین محصولات', enabled: true, order: 5 },
+      { id: 'benefits', title: 'مزایای خرید از گرگیفت+', enabled: true, order: 6 },
+      { id: 'reviews', title: 'نظرات خریداران', enabled: true, order: 7 },
+      { id: 'faqs', title: 'سوالات متداول', enabled: true, order: 8 },
+      { id: 'blog', title: 'آخرین مقالات آموزشی', enabled: true, order: 9 },
+    ],
+  },
+  authAndSms: {
+    registrationOpen: true,
+    otpEnabled: false,
+    smsProvider: 'kavenegar',
+    smsSenderNumber: '10008663',
+    telegramBotBaseUrl: 'https://api.telegram.org',
+    telegramAdminChatId: '',
+  },
+};
 
 const DEFAULT_DEV_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const AUTH_COOKIE_NAME = 'gargift_token';
@@ -589,7 +688,7 @@ export class GarGiftStoreDO {
       now
     );
 
-    // Seed Core Products & Variants
+    // Seed Products & Variants
     const seedProds = [
       {
         id: 1,
@@ -1056,6 +1155,34 @@ export class GarGiftStoreDO {
           new Date().toISOString()
         );
         return jsonRes({ ok: true, data: nextPricing });
+      }
+
+      if (path === '/api/admin/products' && method === 'GET') {
+        return jsonRes({ ok: true, data: this.getEnrichedProducts() });
+      }
+
+      if (path === '/api/admin/categories' && method === 'GET') {
+        return jsonRes({ ok: true, data: this.queryAll('SELECT * FROM categories ORDER BY sort_order ASC') });
+      }
+
+      if (path === '/api/admin/codes' && method === 'GET') {
+        const rows = this.queryAll(`
+          SELECT c.id, c.variant_id, c.code_masked, c.status, c.order_id, c.batch_id, c.sold_at, c.created_at,
+                 pv.title as variant_title, p.title as product_title
+          FROM codes c
+          JOIN product_variants pv ON pv.id = c.variant_id
+          JOIN products p ON p.id = pv.product_id
+          ORDER BY c.id DESC LIMIT 200
+        `);
+        return jsonRes({ ok: true, data: rows });
+      }
+
+      if (path === '/api/admin/users' && method === 'GET') {
+        return jsonRes({ ok: true, data: this.queryAll('SELECT id, name, phone, email, role, status, wallet_balance, created_at FROM users ORDER BY id DESC') });
+      }
+
+      if (path === '/api/admin/settings' && method === 'GET') {
+        return jsonRes({ ok: true, data: this.getAllSettings() });
       }
 
       return jsonRes({ ok: true, data: [] });
